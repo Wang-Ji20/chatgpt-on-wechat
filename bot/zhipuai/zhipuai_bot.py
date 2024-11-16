@@ -3,7 +3,6 @@
 import time
 
 import openai
-import openai.error
 from bot.bot import Bot
 from bot.zhipuai.zhipu_ai_session import ZhipuAISession
 from bot.zhipuai.zhipu_ai_image import ZhipuAIImage
@@ -100,7 +99,7 @@ class ZHIPUAIBot(Bot, ZhipuAIImage):
         """
         try:
             # if conf().get("rate_limit_chatgpt") and not self.tb4chatgpt.get_token():
-            #     raise openai.error.RateLimitError("RateLimitError: rate limit exceeded")
+            #     raise openai.RateLimitError("RateLimitError: rate limit exceeded")
             # if api_key == None, the default openai.api_key will be used
             if args is None:
                 args = self.args
@@ -117,22 +116,22 @@ class ZHIPUAIBot(Bot, ZhipuAIImage):
         except Exception as e:
             need_retry = retry_count < 2
             result = {"completion_tokens": 0, "content": "我现在有点累了，等会再来吧"}
-            if isinstance(e, openai.error.RateLimitError):
+            if isinstance(e, openai.RateLimitError):
                 logger.warn("[ZHIPU_AI] RateLimitError: {}".format(e))
                 result["content"] = "提问太快啦，请休息一下再问我吧"
                 if need_retry:
                     time.sleep(20)
-            elif isinstance(e, openai.error.Timeout):
+            elif isinstance(e, openai.Timeout):
                 logger.warn("[ZHIPU_AI] Timeout: {}".format(e))
                 result["content"] = "我没有收到你的消息"
                 if need_retry:
                     time.sleep(5)
-            elif isinstance(e, openai.error.APIError):
+            elif isinstance(e, openai.APIError):
                 logger.warn("[ZHIPU_AI] Bad Gateway: {}".format(e))
                 result["content"] = "请再问我一次"
                 if need_retry:
                     time.sleep(10)
-            elif isinstance(e, openai.error.APIConnectionError):
+            elif isinstance(e, openai.APIConnectionError):
                 logger.warn("[ZHIPU_AI] APIConnectionError: {}".format(e))
                 result["content"] = "我连接不到你的网络"
                 if need_retry:

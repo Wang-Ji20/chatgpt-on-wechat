@@ -3,7 +3,7 @@
 import time
 
 import openai
-import openai.error
+import openai
 from bot.bot import Bot
 from bot.minimax.minimax_session import MinimaxSession
 from bot.session_manager import SessionManager

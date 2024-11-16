@@ -5,7 +5,6 @@ import time
 from typing import List, Tuple
 
 import openai
-import openai.error
 import broadscope_bailian
 from broadscope_bailian import ChatQaMessage
 
@@ -17,6 +16,7 @@ from bridge.reply import Reply, ReplyType
 from common.log import logger
 from common import const
 from config import conf, load_config
+
 
 class AliQwenBot(Bot):
     def __init__(self):
@@ -43,7 +43,7 @@ class AliQwenBot(Bot):
         return conf().get("qwen_node_id", "")
 
     def temperature(self):
-        return conf().get("temperature", 0.2 )
+        return conf().get("temperature", 0.2)
 
     def top_p(self):
         return conf().get("top_p", 1)
@@ -115,22 +115,22 @@ class AliQwenBot(Bot):
         except Exception as e:
             need_retry = retry_count < 2
             result = {"completion_tokens": 0, "content": "我现在有点累了，等会再来吧"}
-            if isinstance(e, openai.error.RateLimitError):
+            if isinstance(e, openai.RateLimitError):
                 logger.warn("[QWEN] RateLimitError: {}".format(e))
                 result["content"] = "提问太快啦，请休息一下再问我吧"
                 if need_retry:
                     time.sleep(20)
-            elif isinstance(e, openai.error.Timeout):
+            elif isinstance(e, openai.Timeout):
                 logger.warn("[QWEN] Timeout: {}".format(e))
                 result["content"] = "我没有收到你的消息"
                 if need_retry:
                     time.sleep(5)
-            elif isinstance(e, openai.error.APIError):
+            elif isinstance(e, openai.APIError):
                 logger.warn("[QWEN] Bad Gateway: {}".format(e))
                 result["content"] = "请再问我一次"
                 if need_retry:
                     time.sleep(10)
-            elif isinstance(e, openai.error.APIConnectionError):
+            elif isinstance(e, openai.APIConnectionError):
                 logger.warn("[QWEN] APIConnectionError: {}".format(e))
                 need_retry = False
                 result["content"] = "我连接不到你的网络"
@@ -156,35 +156,35 @@ class AliQwenBot(Bot):
 
     def convert_messages_format(self, messages) -> Tuple[str, List[ChatQaMessage]]:
         history = []
-        user_content = ''
-        assistant_content = ''
-        system_content = ''
+        user_content = ""
+        assistant_content = ""
+        system_content = ""
         for message in messages:
-            role = message.get('role')
-            if role == 'user':
-                user_content += message.get('content')
-            elif role == 'assistant':
-                assistant_content = message.get('content')
+            role = message.get("role")
+            if role == "user":
+                user_content += message.get("content")
+            elif role == "assistant":
+                assistant_content = message.get("content")
                 history.append(ChatQaMessage(user_content, assistant_content))
-                user_content = ''
-                assistant_content = ''
-            elif role =='system':
-                system_content += message.get('content')
-        if user_content == '':
-            raise Exception('no user message')
-        if system_content != '':
+                user_content = ""
+                assistant_content = ""
+            elif role == "system":
+                system_content += message.get("content")
+        if user_content == "":
+            raise Exception("no user message")
+        if system_content != "":
             # NOTE 模拟系统消息，测试发现人格描述以"你需要扮演ChatGPT"开头能够起作用，而以"你是ChatGPT"开头模型会直接否认
-            system_qa = ChatQaMessage(system_content, '好的，我会严格按照你的设定回答问题')
+            system_qa = ChatQaMessage(system_content, "好的，我会严格按照你的设定回答问题")
             history.insert(0, system_qa)
         logger.debug("[QWEN] converted qa messages: {}".format([item.to_dict() for item in history]))
         logger.debug("[QWEN] user content as prompt: {}".format(user_content))
         return user_content, history
 
     def get_completion_content(self, response, node_id):
-        if not response['Success']:
+        if not response["Success"]:
             return f"[ERROR]\n{response['Code']}:{response['Message']}"
-        text = response['Data']['Text']
-        if node_id == '':
+        text = response["Data"]["Text"]
+        if node_id == "":
             return text
         # TODO: 当使用流程编排创建大模型应用时，响应结构如下，最终结果在['finalResult'][node_id]['response']['text']中，暂时先这么写
         # {
@@ -203,7 +203,7 @@ class AliQwenBot(Bot):
         #     'Failed': None
         # }
         text_dict = json.loads(text)
-        completion_content =  text_dict['finalResult'][node_id]['response']['text']
+        completion_content = text_dict["finalResult"][node_id]["response"]["text"]
         return completion_content
 
     def calc_tokens(self, messages, completion_content):

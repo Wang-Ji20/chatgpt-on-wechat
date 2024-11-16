@@ -3,7 +3,7 @@
 import time
 
 import openai
-import openai.error
+import openai
 from bot.bot import Bot
 from bot.session_manager import SessionManager
 from bridge.context import ContextType
@@ -91,31 +91,23 @@ class MoonshotBot(Bot):
         :return: {}
         """
         try:
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + self.api_key
-            }
+            headers = {"Content-Type": "application/json", "Authorization": "Bearer " + self.api_key}
             body = args
             body["messages"] = session.messages
             # logger.debug("[MOONSHOT_AI] response={}".format(response))
             # logger.info("[MOONSHOT_AI] reply={}, total_tokens={}".format(response.choices[0]['message']['content'], response["usage"]["total_tokens"]))
-            res = requests.post(
-                self.base_url,
-                headers=headers,
-                json=body
-            )
+            res = requests.post(self.base_url, headers=headers, json=body)
             if res.status_code == 200:
                 response = res.json()
                 return {
                     "total_tokens": response["usage"]["total_tokens"],
                     "completion_tokens": response["usage"]["completion_tokens"],
-                    "content": response["choices"][0]["message"]["content"]
+                    "content": response["choices"][0]["message"]["content"],
                 }
             else:
                 response = res.json()
                 error = response.get("error")
-                logger.error(f"[MOONSHOT_AI] chat failed, status_code={res.status_code}, "
-                             f"msg={error.get('message')}, type={error.get('type')}")
+                logger.error(f"[MOONSHOT_AI] chat failed, status_code={res.status_code}, " f"msg={error.get('message')}, type={error.get('type')}")
 
                 result = {"completion_tokens": 0, "content": "提问太快啦，请休息一下再问我吧"}
                 need_retry = False

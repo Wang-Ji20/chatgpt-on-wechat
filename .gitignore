@@ -3,6 +3,7 @@
 .vscode
 .venv
 .vs
+.grit
 .wechaty/
 __pycache__/
 venv*
@@ -24,6 +25,7 @@ plugins/**/
 !plugins/tool
 !plugins/banwords
 !plugins/banwords/**/
+!plugins/retrieve
 plugins/banwords/__pycache__
 plugins/banwords/lib/__pycache__
 !plugins/hello

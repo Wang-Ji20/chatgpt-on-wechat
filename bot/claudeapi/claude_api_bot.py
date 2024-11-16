@@ -3,7 +3,7 @@
 import time
 
 import openai
-import openai.error
+import openai
 import anthropic
 
 from bot.bot import Bot
@@ -25,11 +25,7 @@ class ClaudeAPIBot(Bot, OpenAIImage):
         super().__init__()
         proxy = conf().get("proxy", None)
         base_url = conf().get("open_ai_api_base", None)  # 复用"open_ai_api_base"参数作为base_url
-        self.claudeClient = anthropic.Anthropic(
-            api_key=conf().get("claude_api_key"),
-            proxies=proxy if proxy else None,
-            base_url=base_url if base_url else None
-        )
+        self.claudeClient = anthropic.Anthropic(api_key=conf().get("claude_api_key"), proxies=proxy if proxy else None, base_url=base_url if base_url else None)
         self.sessions = SessionManager(BaiduWenxinSession, model=conf().get("model") or "text-davinci-003")
 
     def reply(self, query, context=None):
@@ -76,15 +72,10 @@ class ClaudeAPIBot(Bot, OpenAIImage):
     def reply_text(self, session: BaiduWenxinSession, retry_count=0):
         try:
             actual_model = self._model_mapping(conf().get("model"))
-            response = self.claudeClient.messages.create(
-                model=actual_model,
-                max_tokens=4096,
-                system=conf().get("character_desc", ""),
-                messages=session.messages
-            )
+            response = self.claudeClient.messages.create(model=actual_model, max_tokens=4096, system=conf().get("character_desc", ""), messages=session.messages)
             # response = openai.Completion.create(prompt=str(session), **self.args)
             res_content = response.content[0].text.strip().replace("<|endoftext|>", "")
-            total_tokens = response.usage.input_tokens+response.usage.output_tokens
+            total_tokens = response.usage.input_tokens + response.usage.output_tokens
             completion_tokens = response.usage.output_tokens
             logger.info("[CLAUDE_API] reply={}".format(res_content))
             return {
@@ -95,17 +86,17 @@ class ClaudeAPIBot(Bot, OpenAIImage):
         except Exception as e:
             need_retry = retry_count < 2
             result = {"total_tokens": 0, "completion_tokens": 0, "content": "我现在有点累了，等会再来吧"}
-            if isinstance(e, openai.error.RateLimitError):
+            if isinstance(e, openai.RateLimitError):
                 logger.warn("[CLAUDE_API] RateLimitError: {}".format(e))
                 result["content"] = "提问太快啦，请休息一下再问我吧"
                 if need_retry:
                     time.sleep(20)
-            elif isinstance(e, openai.error.Timeout):
+            elif isinstance(e, openai.Timeout):
                 logger.warn("[CLAUDE_API] Timeout: {}".format(e))
                 result["content"] = "我没有收到你的消息"
                 if need_retry:
                     time.sleep(5)
-            elif isinstance(e, openai.error.APIConnectionError):
+            elif isinstance(e, openai.APIConnectionError):
                 logger.warn("[CLAUDE_API] APIConnectionError: {}".format(e))
                 need_retry = False
                 result["content"] = "我连接不到你的网络"
