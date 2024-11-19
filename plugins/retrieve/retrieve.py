@@ -1,6 +1,7 @@
 # encoding:utf-8
 
 import plugins
+from .memory import Memory
 from plugins import *
 from bridge.context import ContextType
 
@@ -28,20 +29,8 @@ class Retrieve(Plugin):
 
     def __init__(self):
         super().__init__()
-        
-        from llama_index.core import Settings
-        from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-        Settings.embed_model = HuggingFaceEmbedding()
-        Settings.llm = None
-        
-        from llama_index.core import SimpleDirectoryReader
-        self.documents =  SimpleDirectoryReader("./plugins/retrieve/priv").load_data()
-        
-        from llama_index.core import VectorStoreIndex
-        self.vector_index = VectorStoreIndex.from_documents(self.documents)
-        
-        self.query_engine = self.vector_index.as_query_engine()
-        
+        self.memory = Memory()
+
         self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
         logger.info("[retrieve] inited")
 
@@ -102,9 +91,8 @@ class Retrieve(Plugin):
             case RetrieveError(r):
                 return r
 
-    def do_insertion(self) -> None | RetrieveError:
-        raise NotImplementedError()
+    def do_insertion(self, new_knowledge: str) -> None | RetrieveError:
+        self.memory.add(new_knowledge)
     
     def do_query(self, query: str) -> str | RetrieveError:
-        logger.warning(f"querying keyword {query}")
-        return str(self.query_engine.query(query))
+        return self.memory.query(query)
